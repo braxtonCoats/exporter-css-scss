@@ -1,0 +1,29 @@
+{
+  "name": "exporter-css-scss",
+  "version": "1.0.0",
+  "description": "Export design tokens from Supernova into CSS custom properties and/or SCSS variables",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx webpack --mode=development --watch",
+    "build": "npx webpack --mode=production",
+    "build:utils": "cd utils && npm install && npm run build",
+    "setup": "npm run build:utils && npm install"
+  },
+  "author": "Braxton Coats",
+  "license": "MIT",
+  "dependencies": {
+    "@supernovaio/export-utils": "file:./utils"
+  },
+  "peerDependencies": {
+    "@supernovaio/sdk-exporters": "2.3.3"
+  },
+  "devDependencies": {
+    "@supernovaio/sdk-exporters": "2.3.3",
+    "prettier": "3.0.3",
+    "terser-webpack-plugin": "5.4.0",
+    "ts-loader": "^7.0.5",
+    "typescript": "^5.2.2",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^6.0.1"
+  }
+}
