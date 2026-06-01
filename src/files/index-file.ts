@@ -32,34 +32,31 @@ export function indexOutputFiles(
   const resolvedBase = baseFormat ?? (exportConfiguration.outputFormat as OutputFormat)
   const resolvedTheme = themeFormat ?? resolvedBase
 
-  // When both formats are the same, produce a unified index per format
-  if (resolvedBase === resolvedTheme) {
-    const format = resolvedBase
-    if (format === OutputFormat.Both) {
-      return [
-        ...indexOutputFiles(tokens, themes, OutputFormat.CSS, OutputFormat.CSS),
-        ...indexOutputFiles(tokens, themes, OutputFormat.SCSS, OutputFormat.SCSS),
-      ]
-    }
-    return [indexOutputFile(tokens, themes, format, true, true)]
+  // Determine which output formats actually need an index file, and what each one should contain.
+  // We generate at most one CSS index and one SCSS index — no duplicates possible.
+  const needsCssIndex =
+    resolvedBase === OutputFormat.CSS || resolvedBase === OutputFormat.Both ||
+    resolvedTheme === OutputFormat.CSS || resolvedTheme === OutputFormat.Both
+
+  const needsScssIndex =
+    resolvedBase === OutputFormat.SCSS || resolvedBase === OutputFormat.Both ||
+    resolvedTheme === OutputFormat.SCSS || resolvedTheme === OutputFormat.Both
+
+  const result: Array<OutputTextFile | null> = []
+
+  if (needsCssIndex) {
+    const includeBase = resolvedBase === OutputFormat.CSS || resolvedBase === OutputFormat.Both
+    const includeThemes = resolvedTheme === OutputFormat.CSS || resolvedTheme === OutputFormat.Both
+    result.push(indexOutputFile(tokens, themes, OutputFormat.CSS, includeBase, includeThemes))
   }
 
-  // Formats differ — produce a base-only index in baseFormat and a theme-only index in themeFormat
-  const baseIndexFiles = resolvedBase === OutputFormat.Both
-    ? [
-        indexOutputFile(tokens, themes, OutputFormat.CSS, true, false),
-        indexOutputFile(tokens, themes, OutputFormat.SCSS, true, false),
-      ]
-    : [indexOutputFile(tokens, themes, resolvedBase, true, false)]
+  if (needsScssIndex) {
+    const includeBase = resolvedBase === OutputFormat.SCSS || resolvedBase === OutputFormat.Both
+    const includeThemes = resolvedTheme === OutputFormat.SCSS || resolvedTheme === OutputFormat.Both
+    result.push(indexOutputFile(tokens, themes, OutputFormat.SCSS, includeBase, includeThemes))
+  }
 
-  const themeIndexFiles = resolvedTheme === OutputFormat.Both
-    ? [
-        indexOutputFile(tokens, themes, OutputFormat.CSS, false, true),
-        indexOutputFile(tokens, themes, OutputFormat.SCSS, false, true),
-      ]
-    : [indexOutputFile(tokens, themes, resolvedTheme, false, true)]
-
-  return [...baseIndexFiles, ...themeIndexFiles]
+  return result
 }
 
 /**
@@ -104,7 +101,7 @@ export function indexOutputFile(
       : ''
 
     const separator = baseImport && themeImports ? "\n\n" : ""
-    const fileName = FileNameHelper.ensureFileExtension(exportConfiguration.indexFileName, extension)
+    const fileName = exportConfiguration.indexFileName.replace(/\.(css|scss)$/i, '') + extension
 
     return FileHelper.createTextFile({
       relativePath: exportConfiguration.baseIndexFilePath,
