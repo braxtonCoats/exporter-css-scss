@@ -2,37 +2,64 @@ import { FileHelper, FileNameHelper, ThemeHelper } from "@supernovaio/export-uti
 import { OutputTextFile, Token, TokenTheme } from "@supernovaio/sdk-exporters"
 import { exportConfiguration } from ".."
 import { getStyleFileName } from "../utils/file-utils"
-import { FileStructure, OutputFormat } from "../config"
+import { FileStructure, OutputFormat } from "../../config"
 
 /**
  * Generates index file(s) that import all token style files and theme variations.
  *
- * When `outputFormat` is "both", this returns one CSS index file and one SCSS index file.
- * Pass an explicit `format` argument to generate only one index file format.
+ * Accepts separate format controls for base token imports and theme imports so that,
+ * for example, an SCSS index can reference only SCSS base files while a CSS index
+ * references only CSS theme files — matching the alloy-styles pattern where base
+ * tokens ship as SCSS and themes ship as runtime-swappable CSS.
  *
- * CSS index uses:   @import "./base/color.css";
- * SCSS index uses:  @import "./base/color.scss";
+ * When base and theme formats are the same, a single combined index is produced per
+ * format (two files when format is "both"). When they differ, two separate index files
+ * are produced: one for the base format (base imports only) and one for the theme
+ * format (theme imports only).
  *
  * @param tokens - Array of design tokens to process
  * @param themes - Array of token themes or theme names to include
- * @param format - Explicit output format override (defaults to exportConfiguration.outputFormat)
- * @returns Array of OutputTextFile objects (0–2 entries depending on format)
+ * @param baseFormat - Format used for base token files (defaults to exportConfiguration.outputFormat)
+ * @param themeFormat - Format used for theme files (defaults to baseFormat)
+ * @returns Array of OutputTextFile objects
  */
 export function indexOutputFiles(
   tokens: Array<Token>,
   themes: Array<TokenTheme | string> = [],
-  format?: OutputFormat
+  baseFormat?: OutputFormat,
+  themeFormat?: OutputFormat
 ): Array<OutputTextFile | null> {
-  const resolvedFormat = format ?? (exportConfiguration.outputFormat as OutputFormat)
+  const resolvedBase = baseFormat ?? (exportConfiguration.outputFormat as OutputFormat)
+  const resolvedTheme = themeFormat ?? resolvedBase
 
-  if (resolvedFormat === OutputFormat.Both) {
-    return [
-      ...indexOutputFiles(tokens, themes, OutputFormat.CSS),
-      ...indexOutputFiles(tokens, themes, OutputFormat.SCSS),
-    ]
+  // When both formats are the same, produce a unified index per format
+  if (resolvedBase === resolvedTheme) {
+    const format = resolvedBase
+    if (format === OutputFormat.Both) {
+      return [
+        ...indexOutputFiles(tokens, themes, OutputFormat.CSS, OutputFormat.CSS),
+        ...indexOutputFiles(tokens, themes, OutputFormat.SCSS, OutputFormat.SCSS),
+      ]
+    }
+    return [indexOutputFile(tokens, themes, format, true, true)]
   }
 
-  return [indexOutputFile(tokens, themes, resolvedFormat)]
+  // Formats differ — produce a base-only index in baseFormat and a theme-only index in themeFormat
+  const baseIndexFiles = resolvedBase === OutputFormat.Both
+    ? [
+        indexOutputFile(tokens, themes, OutputFormat.CSS, true, false),
+        indexOutputFile(tokens, themes, OutputFormat.SCSS, true, false),
+      ]
+    : [indexOutputFile(tokens, themes, resolvedBase, true, false)]
+
+  const themeIndexFiles = resolvedTheme === OutputFormat.Both
+    ? [
+        indexOutputFile(tokens, themes, OutputFormat.CSS, false, true),
+        indexOutputFile(tokens, themes, OutputFormat.SCSS, false, true),
+      ]
+    : [indexOutputFile(tokens, themes, resolvedTheme, false, true)]
+
+  return [...baseIndexFiles, ...themeIndexFiles]
 }
 
 /**
@@ -41,12 +68,16 @@ export function indexOutputFiles(
  * @param tokens - Array of design tokens to process
  * @param themes - Array of token themes or theme names to include
  * @param format - Output format for this index file
+ * @param includeBase - Whether to include @import lines for base token files
+ * @param includeThemes - Whether to include @import lines for theme files
  * @returns OutputTextFile containing the index file, or null if generation is disabled
  */
 export function indexOutputFile(
   tokens: Array<Token>,
   themes: Array<TokenTheme | string> = [],
-  format: OutputFormat = OutputFormat.CSS
+  format: OutputFormat = OutputFormat.CSS,
+  includeBase: boolean = true,
+  includeThemes: boolean = true
 ): OutputTextFile | null {
   // Skip if index file generation is disabled in configuration
   if (!exportConfiguration.generateIndexFile) {
@@ -60,17 +91,17 @@ export function indexOutputFile(
   // Single File Mode
   // =========================================
   if (exportConfiguration.fileStructure === FileStructure.SingleFile) {
-    // Generate import for base tokens file (tokens.css / tokens.scss)
-    const baseImport = exportConfiguration.exportBaseValues
+    const baseImport = includeBase && exportConfiguration.exportBaseValues
       ? `/* Base tokens */\n@import "./tokens${extension}";`
       : ''
 
-    // Generate imports for theme files (tokens.{theme}.css / tokens.{theme}.scss)
-    const themeImports = themes.map((theme) => {
-      const themePath = ThemeHelper.getThemeIdentifier(theme)
-      const themeName = ThemeHelper.getThemeName(theme)
-      return `/* Theme: ${themeName} */\n@import "./tokens.${themePath}${extension}";`
-    }).join("\n\n")
+    const themeImports = includeThemes
+      ? themes.map((theme) => {
+          const themePath = ThemeHelper.getThemeIdentifier(theme)
+          const themeName = ThemeHelper.getThemeName(theme)
+          return `/* Theme: ${themeName} */\n@import "./tokens.${themePath}${extension}";`
+        }).join("\n\n")
+      : ''
 
     const separator = baseImport && themeImports ? "\n\n" : ""
     const fileName = FileNameHelper.ensureFileExtension(exportConfiguration.indexFileName, extension)
@@ -86,37 +117,35 @@ export function indexOutputFile(
   // Separate by Type Mode
   // =========================================
 
-  // Get all unique token types
   const types = [...new Set(tokens.map((token) => token.tokenType))]
 
   // Generate imports for base token files (./base/color.css, ./base/color.scss, …)
-  const imports = exportConfiguration.exportBaseValues
+  const imports = includeBase && exportConfiguration.exportBaseValues
     ? `/* Base tokens */\n` + types
         .map((type) => `@import "${exportConfiguration.baseStyleFilePath}/${getStyleFileName(type, extension)}";`)
         .join("\n")
     : ''
 
   // Generate imports for themed token files
-  const themeImports = themes.map((theme) => {
-    const themePath = ThemeHelper.getThemeIdentifier(theme)
-    const themeName = ThemeHelper.getThemeName(theme)
+  const themeImports = includeThemes
+    ? themes.map((theme) => {
+        const themePath = ThemeHelper.getThemeIdentifier(theme)
+        const themeName = ThemeHelper.getThemeName(theme)
 
-    // When exportOnlyThemedTokens is true, include only types that have themed values
-    const themeTypes = exportConfiguration.exportOnlyThemedTokens && typeof theme !== 'string'
-      ? types.filter(type => ThemeHelper.hasThemedTokens(tokens, type, theme))
-      : types
+        const themeTypes = exportConfiguration.exportOnlyThemedTokens && typeof theme !== 'string'
+          ? types.filter(type => ThemeHelper.hasThemedTokens(tokens, type, theme))
+          : types
 
-    return themeTypes
-      .map((type, index) => {
-        const themeComment = index === 0 ? `/* Theme: ${themeName} */\n` : ''
-        return `${themeComment}@import "./${themePath}/${getStyleFileName(type, extension)}";`
-      })
-      .join("\n")
-  }).join("\n\n")
+        return themeTypes
+          .map((type, index) => {
+            const themeComment = index === 0 ? `/* Theme: ${themeName} */\n` : ''
+            return `${themeComment}@import "./${themePath}/${getStyleFileName(type, extension)}";`
+          })
+          .join("\n")
+      }).join("\n\n")
+    : ''
 
   const separator = imports && themeImports ? "\n\n" : ""
-
-  // Use the configured index file name with the correct extension
   const fileName = FileNameHelper.ensureFileExtension(exportConfiguration.indexFileName, extension)
 
   return FileHelper.createTextFile({

@@ -14,5 +14,10 @@
     "paths": {
       "@supernovaio/sdk-exporters": ["./node_modules/@supernovaio/sdk-exporters"]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "utils/tests",
+    "utils/dist"
+  ]
 }

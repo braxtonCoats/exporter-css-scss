@@ -3,7 +3,7 @@ import { NamingHelper, CSSHelper, GeneralHelper } from "@supernovaio/export-util
 import { Token, TokenGroup, TokenType } from "@supernovaio/sdk-exporters"
 import { exportConfiguration } from ".."
 import { DEFAULT_TOKEN_PREFIXES } from "../constants/defaults"
-import { TokenNameStructure, OutputFormat } from "../config"
+import { TokenNameStructure, OutputFormat } from "../../config"
 
 /**
  * Gets the prefix for a specific token type based on configuration.

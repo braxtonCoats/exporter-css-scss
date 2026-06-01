@@ -2,15 +2,33 @@
     {
         "key": "outputFormat",
         "type": "enum",
-        "default": "both",
-        "title": "Output format",
-        "description": "Choose whether to export CSS custom properties, SCSS variables, or both.",
+        "default": "scss",
+        "title": "Base token format",
+        "description": "Output format for base (non-themed) token files. Typically SCSS so component stylesheets can use $variable references.",
         "category": "Output format",
         "options": {
+            "scss": {
+                "label": "SCSS only",
+                "description": "Generate .scss files with SCSS variables ($variable: value !default)"
+            },
+            "css": {
+                "label": "CSS only",
+                "description": "Generate .css files with CSS custom properties (--variable: value)"
+            },
             "both": {
                 "label": "CSS + SCSS (both)",
-                "description": "Generate both .css files (--variable: value) and .scss files ($variable: value !default)"
-            },
+                "description": "Generate both .css and .scss files"
+            }
+        }
+    },
+    {
+        "key": "themeOutputFormat",
+        "type": "enum",
+        "default": "css",
+        "title": "Theme file format",
+        "description": "Output format for theme-specific files. Typically CSS so themes can be swapped at runtime without recompiling SCSS.",
+        "category": "Output format",
+        "options": {
             "css": {
                 "label": "CSS only",
                 "description": "Generate .css files with CSS custom properties (--variable: value)"
@@ -18,8 +36,28 @@
             "scss": {
                 "label": "SCSS only",
                 "description": "Generate .scss files with SCSS variables ($variable: value !default)"
+            },
+            "both": {
+                "label": "CSS + SCSS (both)",
+                "description": "Generate both .css and .scss files"
             }
         }
+    },
+    {
+        "key": "cssExcludeTokenSets",
+        "type": "string",
+        "default": "",
+        "title": "CSS - Exclude token sets",
+        "description": "Comma-separated list of token set names to exclude from CSS output. Matching is case-insensitive. Example: 'theme, semantic'. Leave empty to include all.",
+        "category": "Output format"
+    },
+    {
+        "key": "scssExcludeTokenSets",
+        "type": "string",
+        "default": "",
+        "title": "SCSS - Exclude token sets",
+        "description": "Comma-separated list of token set names to exclude from SCSS output. Matching is case-insensitive. Example: 'theme, semantic'. Leave empty to include all.",
+        "category": "Output format"
     },
     {
         "key": "tokenNameStyle",
@@ -245,7 +283,7 @@
     {
         "key": "fileStructure",
         "type": "enum",
-        "default": "separateByType",
+        "default": "singleFile",
         "title": "File structure",
         "description": "Control how token styles are organized in files",
         "category": "Style files",
@@ -380,31 +418,31 @@
             "customizeTokenPrefixes": true
         },
         "default": {
-            "Blur": "blur",
-            "Border": "border",
-            "BorderRadius": "borderRadius",
-            "BorderWidth": "borderWidth",
-            "Color": "color",
-            "Dimension": "dimension",
-            "Duration": "duration",
-            "FontFamily": "fontFamily",
-            "FontSize": "fontSize",
-            "FontWeight": "fontWeight",
-            "Gradient": "gradient",
-            "LetterSpacing": "letterSpacing",
-            "LineHeight": "lineHeight",
-            "Opacity": "opacity",
-            "ParagraphSpacing": "paragraphSpacing",
-            "ProductCopy": "productCopy",
-            "Shadow": "shadow",
-            "Size": "size",
-            "Space": "space",
-            "String": "string",
-            "TextCase": "textCase",
-            "TextDecoration": "textDecoration",
-            "Typography": "typography",
-            "Visibility": "visibility",
-            "ZIndex": "zIndex"
+            "Blur": "",
+            "Border": "",
+            "BorderRadius": "",
+            "BorderWidth": "",
+            "Color": "",
+            "Dimension": "",
+            "Duration": "",
+            "FontFamily": "",
+            "FontSize": "",
+            "FontWeight": "",
+            "Gradient": "",
+            "LetterSpacing": "",
+            "LineHeight": "",
+            "Opacity": "",
+            "ParagraphSpacing": "",
+            "ProductCopy": "",
+            "Shadow": "",
+            "Size": "",
+            "Space": "",
+            "String": "",
+            "TextCase": "",
+            "TextDecoration": "",
+            "Typography": "",
+            "Visibility": "",
+            "ZIndex": ""
         },
         "allowedKeys": {
             "options": [

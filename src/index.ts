@@ -1,6 +1,6 @@
 import { Supernova, PulsarContext, RemoteVersionIdentifier, AnyOutputFile } from "@supernovaio/sdk-exporters"
 import { ThemeHelper, WriteTokenPropStore } from "@supernovaio/export-utils"
-import { ExporterConfiguration, ThemeExportStyle } from "../config"
+import { ExporterConfiguration, OutputFormat, ThemeExportStyle } from "../config"
 import { indexOutputFiles } from "./files/index-file"
 import { generateStyleFiles } from "./files/style-file"
 import { tokenVariableName } from "./content/token"
@@ -69,20 +69,24 @@ Pulsar.export(async (sdk: Supernova, context: PulsarContext): Promise<Array<AnyO
       return theme
     })
 
+    // Resolve per-context formats once so every branch reads the same values
+    const baseFormat = exportConfiguration.outputFormat as OutputFormat
+    const themeFormat = exportConfiguration.themeOutputFormat as OutputFormat
+
     // Handle different theme export modes
     switch (exportConfiguration.exportThemesAs) {
       case ThemeExportStyle.ApplyDirectly:
-        // Apply all themes directly to token values
+        // Apply all themes directly to token values — no separate theme files, use base format
         tokens = sdk.tokens.computeTokensByApplyingThemes(tokens, tokens, themesToApply)
         const directFiles = [
-          ...generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections),
-          ...indexOutputFiles(tokens)
+          ...generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections, baseFormat),
+          ...indexOutputFiles(tokens, [], baseFormat, baseFormat)
         ]
         outputFiles = processOutputFiles(directFiles)
         break
 
       case ThemeExportStyle.SeparateFiles:
-        // Generate separate files for each theme
+        // Generate separate files for each theme in themeFormat
         const themeFiles = themesToApply.flatMap((theme) => {
           const themedTokens = sdk.tokens.computeTokensByApplyingThemes(tokens, tokens, [theme])
           return generateStyleFiles(
@@ -90,46 +94,49 @@ Pulsar.export(async (sdk: Supernova, context: PulsarContext): Promise<Array<AnyO
             tokenGroups,
             ThemeHelper.getThemeIdentifier(theme),
             theme,
-            tokenCollections
+            tokenCollections,
+            themeFormat
           )
         })
 
-        // Generate base files without themes only if exportBaseValues is true
+        // Generate base files in baseFormat only if exportBaseValues is true
         const baseFiles = exportConfiguration.exportBaseValues
-          ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections)
+          ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections, baseFormat)
           : []
 
-        const separateFiles = [...baseFiles, ...themeFiles, ...indexOutputFiles(tokens, themesToApply)]
+        const separateFiles = [...baseFiles, ...themeFiles, ...indexOutputFiles(tokens, themesToApply, baseFormat, themeFormat)]
         outputFiles = processOutputFiles(separateFiles)
         break
 
       case ThemeExportStyle.MergedTheme:
-        // Generate base files without themes only if exportBaseValues is true
+        // Generate base files in baseFormat only if exportBaseValues is true
         const baseTokenFiles = exportConfiguration.exportBaseValues
-          ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections)
+          ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections, baseFormat)
           : []
 
-        // Generate themed files with all themes applied
+        // Generate merged theme file in themeFormat
         const themedTokens = sdk.tokens.computeTokensByApplyingThemes(tokens, tokens, themesToApply)
         const mergedThemeFiles = generateStyleFiles(
           themedTokens,
           tokenGroups,
           "themed",
           themesToApply[0],
-          tokenCollections
+          tokenCollections,
+          themeFormat
         )
 
-        const mergedFiles = [...baseTokenFiles, ...mergedThemeFiles, ...indexOutputFiles(tokens, ["themed"])]
+        const mergedFiles = [...baseTokenFiles, ...mergedThemeFiles, ...indexOutputFiles(tokens, ["themed"], baseFormat, themeFormat)]
         outputFiles = processOutputFiles(mergedFiles)
         break
     }
   } else {
-    // Default case: Generate files without themes
+    // Default case: no themes — generate base files only
+    const baseFormat = exportConfiguration.outputFormat as OutputFormat
     const defaultFiles = [
       ...(exportConfiguration.exportBaseValues
-        ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections)
+        ? generateStyleFiles(tokens, tokenGroups, "", undefined, tokenCollections, baseFormat)
         : []),
-      ...indexOutputFiles(tokens)
+      ...indexOutputFiles(tokens, [], baseFormat, baseFormat)
     ]
     outputFiles = processOutputFiles(defaultFiles)
   }

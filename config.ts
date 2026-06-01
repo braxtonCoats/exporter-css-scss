@@ -90,6 +90,12 @@ export type ExporterConfiguration = {
   propertyToWriteNameToIncludesVar: boolean
   /** When enabled, references will include fallback values as raw token values to handle cases when referenced variables are not loaded */
   useFallbackValues: boolean
-  /** Controls whether to generate CSS custom properties (.css), SCSS variables (.scss), or both */
+  /** Controls the output format for base (non-themed) token files */
   outputFormat: OutputFormat
+  /** Controls the output format for theme-specific files. Defaults to CSS so theme overrides can be loaded at runtime without recompiling SCSS */
+  themeOutputFormat: OutputFormat
+  /** Comma-separated list of token set (collection) names to exclude from CSS output. Case-insensitive. Leave empty to include all. */
+  cssExcludeTokenSets: string
+  /** Comma-separated list of token set (collection) names to exclude from SCSS output. Case-insensitive. Leave empty to include all. */
+  scssExcludeTokenSets: string
 }

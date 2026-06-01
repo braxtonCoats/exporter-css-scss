@@ -3,8 +3,45 @@ import { OutputTextFile, Token, TokenGroup, TokenType } from "@supernovaio/sdk-e
 import { exportConfiguration } from ".."
 import { convertedToken, analyzeTokensForRgbUtilities } from "../content/token"
 import { TokenTheme } from "@supernovaio/sdk-exporters"
-import { FileStructure, OutputFormat } from "../config"
+import { FileStructure, OutputFormat } from "../../config"
 import { DesignSystemCollection } from "@supernovaio/sdk-exporters/build/sdk-typescript/src/model/base/SDKDesignSystemCollection"
+
+/**
+ * Parses a comma-separated string of token set names into a normalized lowercase array.
+ */
+function parseTokenSetFilter(value: string): string[] {
+  return value ? value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : []
+}
+
+/**
+ * Filters tokens based on per-format token set exclusion configuration.
+ * Tokens whose collection name appears in the exclude list for the given format are removed.
+ * Tokens with no collection are always kept.
+ * Matching is case-insensitive.
+ *
+ * @param tokens - Tokens to filter
+ * @param tokenCollections - All collections, used to resolve token.collectionId → name
+ * @param format - The output format being generated (CSS or SCSS)
+ * @returns Filtered token array
+ */
+function filterTokensByFormat(
+  tokens: Array<Token>,
+  tokenCollections: Array<DesignSystemCollection>,
+  format: OutputFormat
+): Array<Token> {
+  const excludeList = format === OutputFormat.SCSS
+    ? parseTokenSetFilter(exportConfiguration.scssExcludeTokenSets)
+    : parseTokenSetFilter(exportConfiguration.cssExcludeTokenSets)
+
+  if (excludeList.length === 0) return tokens
+
+  return tokens.filter(token => {
+    if (!token.collectionId) return true
+    const collection = tokenCollections.find(c => c.persistentId === token.collectionId)
+    const collectionName = collection?.name?.toLowerCase() ?? ''
+    return !excludeList.includes(collectionName)
+  })
+}
 
 /**
  * Main entry point for generating style files.
@@ -97,6 +134,9 @@ export function styleOutputFile(
   // Get all tokens matching the specified token type
   let tokensOfType = tokens.filter((token) => token.tokenType === type)
 
+  // Apply per-format token set exclusions (e.g. skip "theme" collection for SCSS)
+  tokensOfType = filterTokensByFormat(tokensOfType, tokenCollections, format)
+
   // For theme files: filter tokens to only include those that are themed
   if (themePath && theme && exportConfiguration.exportOnlyThemedTokens) {
     tokensOfType = ThemeHelper.filterThemedTokens(tokensOfType, theme)
@@ -185,6 +225,9 @@ function generateCombinedStyleFile(
 ): OutputTextFile | null {
   const isScss = format === OutputFormat.SCSS
   let processedTokens = tokens
+
+  // Apply per-format token set exclusions
+  processedTokens = filterTokensByFormat(processedTokens, tokenCollections, format)
 
   // For theme files: filter tokens to only include those that are themed
   if (themePath && theme && exportConfiguration.exportOnlyThemedTokens) {
