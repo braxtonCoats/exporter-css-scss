@@ -140,10 +140,10 @@ export class NamingHelper {
       // Split by "-" to get new fragments
       const normalizedFragments = normalizedString.split('-').filter(f => f.length > 0)
       
-      // Remove duplicates from normalized fragments
+      // Remove duplicates from normalized fragments, but always preserve the last
+      // fragment (the token name) — intentional patterns like "info-info" must survive
       const uniqueFragments = normalizedFragments.filter((fragment, index) => {
-        // Keep if it's first element or different from previous
-        return index === 0 || fragment !== normalizedFragments[index - 1]
+        return index === 0 || fragment !== normalizedFragments[index - 1] || index === normalizedFragments.length - 1
       })
       
       // Join back into a sentence

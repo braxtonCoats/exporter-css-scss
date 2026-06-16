@@ -415,3 +415,23 @@ test('codeSafeVariableName_with_removeDuplicateFragments', () => {
     'color_bg_fill_warning'
   )
 })
+
+test('codeSafeVariableNameForToken_preserves_token_name_matching_parent', () => {
+  // Regression: token named "Info" inside group "Info" must produce "info-info",
+  // not "info" (the second segment is the token's own name, not an accidental path dup)
+  const token = { name: 'Info' }
+  const tokenGroup = {
+    name: 'Info',
+    path: ['Background'],
+    isRoot: false
+  }
+  expect(NamingHelper.codeSafeVariableNameForToken(token, StringCase.kebabCase, tokenGroup, 'color')).toBe(
+    'color-background-info-info'
+  )
+  expect(NamingHelper.codeSafeVariableNameForToken(token, StringCase.camelCase, tokenGroup, 'color')).toBe(
+    'colorBackgroundInfoInfo'
+  )
+  expect(NamingHelper.codeSafeVariableNameForToken(token, StringCase.snakeCase, tokenGroup, 'color')).toBe(
+    'color_background_info_info'
+  )
+})
