@@ -90,7 +90,7 @@ export function getTokenRawValue(
     allowReferences: false, // Don't follow references to avoid infinite loops
     decimals: exportConfiguration.colorPrecision,
     colorFormat: exportConfiguration.colorFormat,
-    forceRemUnit: exportConfiguration.forceRemUnit,
+    forceRemUnit: false,
     remBase: exportConfiguration.remBase,
     tokenToVariableRef: () => "", // Stub function that never gets called since allowReferences is false
   })
@@ -173,14 +173,13 @@ export function convertedToken(
   const name = tokenVariableName(token, tokenGroups, collections)
   const isScss = format === OutputFormat.SCSS
 
-  // Build REM exclusion check: any token whose variable name contains one of the
-  // user-supplied substrings skips REM conversion for that token entirely.
-  const remExcludePatterns = (exportConfiguration.remExclude || '')
+  // Parse REM include patterns once — any token whose variable name contains a match gets REM.
+  const remIncludePatterns = (exportConfiguration.remInclude || '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
-  const isRemExcluded = remExcludePatterns.length > 0 && remExcludePatterns.some((p) => name.toLowerCase().includes(p))
-  const forceRem = exportConfiguration.forceRemUnit && !isRemExcluded
+  const nameMatches = (n: string) => remIncludePatterns.some((p) => n.toLowerCase().includes(p))
+  const forceRem = nameMatches(name)
 
   // Convert token value, handling references according to the target format
   const value = CSSHelper.tokenToCSS(token, mappedTokens, {
@@ -244,12 +243,10 @@ export function convertedToken(
       },
     }
 
-    // Per-property REM overrides: check sub-property suffix against the same exclusion patterns
-    const isSuffixExcluded = (suffix: string) =>
-      remExcludePatterns.some((p) => `${name}-${suffix}`.toLowerCase().includes(p))
+    // Per-property REM: check each sub-property's full variable name against remInclude patterns
     const remPerProperty = {
-      fontSize: forceRem && !isSuffixExcluded('font-size'),
-      lineHeight: forceRem && !isSuffixExcluded('line-height'),
+      fontSize: nameMatches(`${name}-font-size`),
+      lineHeight: nameMatches(`${name}-line-height`),
     }
 
     let splitPairs = CSSHelper.typographyTokenValueToSplitCSS(typographyToken.value, mappedTokens, splitOptions, remPerProperty)

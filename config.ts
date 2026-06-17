@@ -68,9 +68,9 @@ export type ExporterConfiguration = {
   exportOnlyThemedTokens: boolean
   /** When enabled, base token values will be exported along with themes */
   exportBaseValues: boolean
-  /** When enabled, converts pixel values to rem units */
-  forceRemUnit: boolean
-  /** Base pixel value for rem conversion (default: 16) */
+  /** Comma-separated list of variable name substrings whose tokens should be converted to REM. Any token whose variable name contains a match will use REM. Leave empty to disable REM conversion entirely. Example: "font-size, line-height" */
+  remInclude: string
+  /** Base pixel value for REM conversion (default: 16) */
   remBase: number
   /** When enabled, allows customization of style file names */
   customizeStyleFileNames: boolean
@@ -100,6 +100,4 @@ export type ExporterConfiguration = {
   scssExcludeTokenSets: string
   /** When enabled, composite typography tokens are split into individual variables per property (font-family, font-weight, font-size, line-height, text-decoration, text-transform/font-variant) */
   splitTypographyTokens: boolean
-  /** Comma-separated list of substrings to match against variable names. Any token whose variable name contains a match will skip REM conversion even when forceRemUnit is enabled. Example: "font-weight, opacity" */
-  remExclude: string
 }
