@@ -577,5 +577,27 @@
         "title": "Split typography tokens",
         "description": "When enabled, composite typography tokens are exported as individual variables per property (e.g. --heading-font-size, --heading-font-weight) instead of a single shorthand value.",
         "category": "Token values"
+    },
+    {
+        "key": "remFontSize",
+        "type": "boolean",
+        "default": true,
+        "title": "REM: font-size",
+        "description": "Apply REM unit conversion to font-size when splitting typography tokens. Has no effect if Force REM Units is disabled.",
+        "category": "Token values",
+        "dependsOn": {
+            "splitTypographyTokens": true
+        }
+    },
+    {
+        "key": "remLineHeight",
+        "type": "boolean",
+        "default": true,
+        "title": "REM: line-height",
+        "description": "Apply REM unit conversion to line-height when splitting typography tokens. Has no effect if Force REM Units is disabled.",
+        "category": "Token values",
+        "dependsOn": {
+            "splitTypographyTokens": true
+        }
     }
 ]

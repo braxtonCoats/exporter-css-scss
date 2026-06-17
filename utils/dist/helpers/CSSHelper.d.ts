@@ -47,11 +47,18 @@ export declare class CSSHelper {
     /**
      * Converts a typography token value into an array of individual CSS property/value pairs.
      * Used when splitTypographyTokens is enabled, so each sub-property gets its own variable.
-     * Returns an empty array if the typography token is a full reference to another token
-     * (in that case fall back to the shorthand via typographyTokenValueToCSS).
+     *
+     * Returns null if the token is a full reference to another token — the caller is responsible
+     * for resolving the reference and generating split vars that point to the source token's split vars.
+     *
+     * remPerProperty allows overriding forceRemUnit per dimension property so the caller can
+     * opt specific sub-properties (e.g. line-height) out of REM conversion independently.
      */
-    static typographyTokenValueToSplitCSS(typography: TypographyTokenValue, allTokens: Map<string, Token>, options: TokenToCSSOptions): Array<{
+    static typographyTokenValueToSplitCSS(typography: TypographyTokenValue, allTokens: Map<string, Token>, options: TokenToCSSOptions, remPerProperty?: {
+        fontSize?: boolean;
+        lineHeight?: boolean;
+    }): Array<{
         suffix: string;
         value: string;
-    }>;
+    }> | null;
 }
