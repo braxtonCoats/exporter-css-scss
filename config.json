@@ -180,7 +180,7 @@
     {
         "key": "remInclude",
         "type": "string",
-        "default": "",
+        "default": "font-size, line-height, gap, border-radius, padding",
         "title": "REM values",
         "description": "Comma-separated list of strings to match against variable names. Any token whose variable name contains a match will be converted to REM. Leave empty to disable REM conversion entirely. Example: 'font-size, line-height'.",
         "category": "Token values"
