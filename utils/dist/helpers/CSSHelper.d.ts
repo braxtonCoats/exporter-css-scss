@@ -44,4 +44,14 @@ export declare class CSSHelper {
     static unitToCSS(unit: Unit): string;
     static textCaseToCSS(textCase: TextCase): string;
     static textDecorationToCSS(textDecoration: TextDecoration): string;
+    /**
+     * Converts a typography token value into an array of individual CSS property/value pairs.
+     * Used when splitTypographyTokens is enabled, so each sub-property gets its own variable.
+     * Returns an empty array if the typography token is a full reference to another token
+     * (in that case fall back to the shorthand via typographyTokenValueToCSS).
+     */
+    static typographyTokenValueToSplitCSS(typography: TypographyTokenValue, allTokens: Map<string, Token>, options: TokenToCSSOptions): Array<{
+        suffix: string;
+        value: string;
+    }>;
 }

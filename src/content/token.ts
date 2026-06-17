@@ -1,6 +1,6 @@
 import { DesignSystemCollection } from "@supernovaio/sdk-exporters/build/sdk-typescript/src/model/base/SDKDesignSystemCollection"
 import { NamingHelper, CSSHelper, GeneralHelper } from "@supernovaio/export-utils"
-import { Token, TokenGroup, TokenType } from "@supernovaio/sdk-exporters"
+import { Token, TokenGroup, TokenType, TypographyToken } from "@supernovaio/sdk-exporters"
 import { exportConfiguration } from ".."
 import { DEFAULT_TOKEN_PREFIXES } from "../constants/defaults"
 import { TokenNameStructure, OutputFormat } from "../../config"
@@ -211,6 +211,49 @@ export function convertedToken(
   // SCSS variables live at the top level (no selector block), so no indentation.
   // CSS variables are indented inside their selector block.
   const indentString = isScss ? '' : GeneralHelper.indent(exportConfiguration.indent)
+
+  // Split typography tokens into individual sub-property variables when configured
+  if (token.tokenType === TokenType.typography && exportConfiguration.splitTypographyTokens) {
+    const splitPairs = CSSHelper.typographyTokenValueToSplitCSS(
+      (token as TypographyToken).value,
+      mappedTokens,
+      {
+        allowReferences: exportConfiguration.useReferences,
+        decimals: exportConfiguration.colorPrecision,
+        colorFormat: exportConfiguration.colorFormat,
+        forceRemUnit: exportConfiguration.forceRemUnit,
+        remBase: exportConfiguration.remBase,
+        tokenToVariableRef: (t) => {
+          const variableName = tokenVariableName(t, tokenGroups, collections)
+          if (isScss) {
+            return `$${variableName}`
+          }
+          if (exportConfiguration.useFallbackValues) {
+            const rawValue = getTokenRawValue(t, mappedTokens)
+            return `var(--${variableName}, ${rawValue})`
+          }
+          return `var(--${variableName})`
+        },
+      }
+    )
+
+    // If split returned results, emit one variable per sub-property
+    if (splitPairs.length > 0) {
+      let output = ""
+      if (exportConfiguration.showDescriptions && token.description) {
+        output += `${indentString}/* ${token.description.trim()} */\n`
+      }
+      const lines = splitPairs.map(({ suffix, value: subValue }) => {
+        const subName = `${name}-${suffix}`
+        return isScss
+          ? `$${subName}: ${subValue} !default;`
+          : `${indentString}--${subName}: ${subValue};`
+      })
+      output += lines.join('\n')
+      return output
+    }
+    // Fall through to shorthand if split returned empty (full-reference token)
+  }
 
   let output = ""
 
