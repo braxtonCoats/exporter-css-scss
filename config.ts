@@ -100,6 +100,6 @@ export type ExporterConfiguration = {
   scssExcludeTokenSets: string
   /** When enabled, composite typography tokens are split into individual variables per property (font-family, font-weight, font-size, line-height, text-decoration, text-transform/font-variant) */
   splitTypographyTokens: boolean
-  /** Comma-separated list of typography sub-properties to exclude from REM conversion when splitTypographyTokens is enabled (e.g. "font-size, line-height"). Requires forceRemUnit to be enabled. */
-  remTypographyExclude: string
+  /** Comma-separated list of substrings to match against variable names. Any token whose variable name contains a match will skip REM conversion even when forceRemUnit is enabled. Example: "font-weight, opacity" */
+  remExclude: string
 }

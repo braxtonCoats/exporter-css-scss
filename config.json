@@ -579,14 +579,14 @@
         "category": "Token values"
     },
     {
-        "key": "remTypographyExclude",
+        "key": "remExclude",
         "type": "string",
         "default": "",
-        "title": "REM exclusions (typography)",
-        "description": "Comma-separated list of typography sub-properties to exclude from REM conversion when splitting tokens. Accepted values: font-size, line-height. Example: 'font-size, line-height'. Has no effect if Force REM Units is disabled.",
+        "title": "REM exclusions",
+        "description": "Comma-separated list of strings to match against variable names. Any token whose variable name contains a match will not be converted to REM, even when Force REM Units is enabled. Example: 'font-weight, opacity'.",
         "category": "Token values",
         "dependsOn": {
-            "splitTypographyTokens": true
+            "forceRemUnit": true
         }
     }
 ]
