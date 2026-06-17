@@ -350,5 +350,53 @@ class CSSHelper {
                 return 'line-through';
         }
     }
+    /**
+     * Converts a typography token value into an array of individual CSS property/value pairs.
+     * Used when splitTypographyTokens is enabled, so each sub-property gets its own variable.
+     * Returns an empty array if the typography token is a full reference to another token
+     * (in that case fall back to the shorthand via typographyTokenValueToCSS).
+     */
+    static typographyTokenValueToSplitCSS(typography, allTokens, options) {
+        const reference = (0, TokenHelper_1.sureOptionalReference)(typography.referencedTokenId, allTokens, options.allowReferences);
+        if (reference) {
+            return [];
+        }
+        const fontFamilyRef = (0, TokenHelper_1.sureOptionalReference)(typography.fontFamily.referencedTokenId, allTokens, options.allowReferences);
+        const fontWeightRef = (0, TokenHelper_1.sureOptionalReference)(typography.fontWeight.referencedTokenId, allTokens, options.allowReferences);
+        const decorationRef = (0, TokenHelper_1.sureOptionalReference)(typography.textDecoration.referencedTokenId, allTokens, options.allowReferences);
+        const caseRef = (0, TokenHelper_1.sureOptionalReference)(typography.textCase.referencedTokenId, allTokens, options.allowReferences);
+        const fontFamily = fontFamilyRef
+            ? options.tokenToVariableRef(fontFamilyRef)
+            : `"${typography.fontFamily.text}"`;
+        const fontWeight = fontWeightRef
+            ? options.tokenToVariableRef(fontWeightRef)
+            : String((0, TokenHelper_1.normalizeTextWeight)(typography.fontWeight.text));
+        const fontSize = this.dimensionTokenValueToCSS(typography.fontSize, allTokens, options);
+        const lineHeight = typography.lineHeight
+            ? this.dimensionTokenValueToCSS(typography.lineHeight, allTokens, options)
+            : null;
+        const textDecoration = decorationRef
+            ? options.tokenToVariableRef(decorationRef)
+            : this.textDecorationToCSS(typography.textDecoration.value);
+        const result = [
+            { suffix: 'font-family', value: fontFamily },
+            { suffix: 'font-weight', value: fontWeight },
+            { suffix: 'font-size', value: fontSize },
+        ];
+        if (lineHeight !== null) {
+            result.push({ suffix: 'line-height', value: lineHeight });
+        }
+        result.push({ suffix: 'text-decoration', value: textDecoration });
+        if (caseRef) {
+            result.push({ suffix: 'text-transform', value: options.tokenToVariableRef(caseRef) });
+        }
+        else if (typography.textCase.value === sdk_exporters_1.TextCase.smallCaps) {
+            result.push({ suffix: 'font-variant', value: 'small-caps' });
+        }
+        else {
+            result.push({ suffix: 'text-transform', value: this.textCaseToCSS(typography.textCase.value) });
+        }
+        return result;
+    }
 }
 exports.CSSHelper = CSSHelper;

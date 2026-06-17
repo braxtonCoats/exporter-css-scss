@@ -569,5 +569,13 @@
         "dependsOn": {
             "useReferences": true
         }
+    },
+    {
+        "key": "splitTypographyTokens",
+        "type": "boolean",
+        "default": false,
+        "title": "Split typography tokens",
+        "description": "When enabled, composite typography tokens are exported as individual variables per property (e.g. --heading-font-size, --heading-font-weight) instead of a single shorthand value.",
+        "category": "Token values"
     }
 ]

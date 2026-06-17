@@ -514,5 +514,67 @@ export class CSSHelper {
           return 'line-through'
       }
     }
+
+    /**
+     * Converts a typography token value into an array of individual CSS property/value pairs.
+     * Used when splitTypographyTokens is enabled, so each sub-property gets its own variable.
+     * Returns an empty array if the typography token is a full reference to another token
+     * (in that case fall back to the shorthand via typographyTokenValueToCSS).
+     */
+    static typographyTokenValueToSplitCSS(
+      typography: TypographyTokenValue,
+      allTokens: Map<string, Token>,
+      options: TokenToCSSOptions
+    ): Array<{ suffix: string; value: string }> {
+      const reference = sureOptionalReference(typography.referencedTokenId, allTokens, options.allowReferences)
+      if (reference) {
+        return []
+      }
+
+      const fontFamilyRef = sureOptionalReference(typography.fontFamily.referencedTokenId, allTokens, options.allowReferences)
+      const fontWeightRef = sureOptionalReference(typography.fontWeight.referencedTokenId, allTokens, options.allowReferences)
+      const decorationRef = sureOptionalReference(typography.textDecoration.referencedTokenId, allTokens, options.allowReferences)
+      const caseRef = sureOptionalReference(typography.textCase.referencedTokenId, allTokens, options.allowReferences)
+
+      const fontFamily = fontFamilyRef
+        ? options.tokenToVariableRef(fontFamilyRef)
+        : `"${typography.fontFamily.text}"`
+
+      const fontWeight = fontWeightRef
+        ? options.tokenToVariableRef(fontWeightRef)
+        : String(normalizeTextWeight(typography.fontWeight.text))
+
+      const fontSize = this.dimensionTokenValueToCSS(typography.fontSize, allTokens, options)
+
+      const lineHeight = typography.lineHeight
+        ? this.dimensionTokenValueToCSS(typography.lineHeight, allTokens, options)
+        : null
+
+      const textDecoration = decorationRef
+        ? options.tokenToVariableRef(decorationRef)
+        : this.textDecorationToCSS(typography.textDecoration.value as TextDecoration)
+
+      const result: Array<{ suffix: string; value: string }> = [
+        { suffix: 'font-family', value: fontFamily },
+        { suffix: 'font-weight', value: fontWeight },
+        { suffix: 'font-size', value: fontSize },
+      ]
+
+      if (lineHeight !== null) {
+        result.push({ suffix: 'line-height', value: lineHeight })
+      }
+
+      result.push({ suffix: 'text-decoration', value: textDecoration })
+
+      if (caseRef) {
+        result.push({ suffix: 'text-transform', value: options.tokenToVariableRef(caseRef) })
+      } else if (typography.textCase.value === TextCase.smallCaps) {
+        result.push({ suffix: 'font-variant', value: 'small-caps' })
+      } else {
+        result.push({ suffix: 'text-transform', value: this.textCaseToCSS(typography.textCase.value as TextCase) })
+      }
+
+      return result
+    }
   }
   

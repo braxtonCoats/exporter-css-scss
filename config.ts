@@ -98,4 +98,6 @@ export type ExporterConfiguration = {
   cssExcludeTokenSets: string
   /** Comma-separated list of token set (collection) names to exclude from SCSS output. Case-insensitive. Leave empty to include all. */
   scssExcludeTokenSets: string
+  /** When enabled, composite typography tokens are split into individual variables per property (font-family, font-weight, font-size, line-height, text-decoration, text-transform/font-variant) */
+  splitTypographyTokens: boolean
 }
