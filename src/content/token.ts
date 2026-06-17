@@ -90,7 +90,7 @@ export function getTokenRawValue(
     allowReferences: false, // Don't follow references to avoid infinite loops
     decimals: exportConfiguration.colorPrecision,
     colorFormat: exportConfiguration.colorFormat,
-    forceRemUnit: exportConfiguration.forceRemUnit,
+    forceRemUnit: false,
     remBase: exportConfiguration.remBase,
     tokenToVariableRef: () => "", // Stub function that never gets called since allowReferences is false
   })
@@ -173,12 +173,20 @@ export function convertedToken(
   const name = tokenVariableName(token, tokenGroups, collections)
   const isScss = format === OutputFormat.SCSS
 
+  // Parse REM include patterns once — any token whose variable name contains a match gets REM.
+  const remIncludePatterns = (exportConfiguration.remInclude || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  const nameMatches = (n: string) => remIncludePatterns.some((p) => n.toLowerCase().includes(p))
+  const forceRem = nameMatches(name)
+
   // Convert token value, handling references according to the target format
   const value = CSSHelper.tokenToCSS(token, mappedTokens, {
     allowReferences: exportConfiguration.useReferences,
     decimals: exportConfiguration.colorPrecision,
     colorFormat: exportConfiguration.colorFormat,
-    forceRemUnit: exportConfiguration.forceRemUnit,
+    forceRemUnit: forceRem,
     remBase: exportConfiguration.remBase,
     // Convert token references to the appropriate variable syntax for the target format:
     //   SCSS: $variable-name
@@ -220,7 +228,7 @@ export function convertedToken(
       allowReferences: exportConfiguration.useReferences,
       decimals: exportConfiguration.colorPrecision,
       colorFormat: exportConfiguration.colorFormat,
-      forceRemUnit: exportConfiguration.forceRemUnit,
+      forceRemUnit: forceRem,
       remBase: exportConfiguration.remBase,
       tokenToVariableRef: (t: Token) => {
         const variableName = tokenVariableName(t, tokenGroups, collections)
@@ -235,15 +243,10 @@ export function convertedToken(
       },
     }
 
-    const remExcluded = new Set(
-      (exportConfiguration.remTypographyExclude || '')
-        .split(',')
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean)
-    )
+    // Per-property REM: check each sub-property's full variable name against remInclude patterns
     const remPerProperty = {
-      fontSize: exportConfiguration.forceRemUnit && !remExcluded.has('font-size'),
-      lineHeight: exportConfiguration.forceRemUnit && !remExcluded.has('line-height'),
+      fontSize: nameMatches(`${name}-font-size`),
+      lineHeight: nameMatches(`${name}-line-height`),
     }
 
     let splitPairs = CSSHelper.typographyTokenValueToSplitCSS(typographyToken.value, mappedTokens, splitOptions, remPerProperty)

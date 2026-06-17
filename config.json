@@ -178,11 +178,11 @@
         }
     },
     {
-        "key": "forceRemUnit",
-        "type": "boolean",
-        "default": false,
-        "title": "Force REM units",
-        "description": "Convert all pixel values to REM units.",
+        "key": "remInclude",
+        "type": "string",
+        "default": "",
+        "title": "REM values",
+        "description": "Comma-separated list of strings to match against variable names. Any token whose variable name contains a match will be converted to REM. Leave empty to disable REM conversion entirely. Example: 'font-size, line-height'.",
         "category": "Token values"
     },
     {
@@ -191,10 +191,7 @@
         "default": 16,
         "title": "REM base value",
         "description": "Base pixel value for REM conversion.",
-        "category": "Token values",
-        "dependsOn": {
-            "forceRemUnit": true
-        }
+        "category": "Token values"
     },
     {
         "key": "useReferences",
@@ -578,15 +575,4 @@
         "description": "When enabled, composite typography tokens are exported as individual variables per property (e.g. --heading-font-size, --heading-font-weight) instead of a single shorthand value.",
         "category": "Token values"
     },
-    {
-        "key": "remTypographyExclude",
-        "type": "string",
-        "default": "",
-        "title": "REM exclusions (typography)",
-        "description": "Comma-separated list of typography sub-properties to exclude from REM conversion when splitting tokens. Accepted values: font-size, line-height. Example: 'font-size, line-height'. Has no effect if Force REM Units is disabled.",
-        "category": "Token values",
-        "dependsOn": {
-            "splitTypographyTokens": true
-        }
-    }
 ]
