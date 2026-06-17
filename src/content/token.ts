@@ -214,31 +214,57 @@ export function convertedToken(
 
   // Split typography tokens into individual sub-property variables when configured
   if (token.tokenType === TokenType.typography && exportConfiguration.splitTypographyTokens) {
-    const splitPairs = CSSHelper.typographyTokenValueToSplitCSS(
-      (token as TypographyToken).value,
-      mappedTokens,
-      {
-        allowReferences: exportConfiguration.useReferences,
-        decimals: exportConfiguration.colorPrecision,
-        colorFormat: exportConfiguration.colorFormat,
-        forceRemUnit: exportConfiguration.forceRemUnit,
-        remBase: exportConfiguration.remBase,
-        tokenToVariableRef: (t) => {
-          const variableName = tokenVariableName(t, tokenGroups, collections)
-          if (isScss) {
-            return `$${variableName}`
-          }
-          if (exportConfiguration.useFallbackValues) {
-            const rawValue = getTokenRawValue(t, mappedTokens)
-            return `var(--${variableName}, ${rawValue})`
-          }
-          return `var(--${variableName})`
-        },
-      }
-    )
+    const typographyToken = token as TypographyToken
 
-    // If split returned results, emit one variable per sub-property
-    if (splitPairs.length > 0) {
+    const splitOptions = {
+      allowReferences: exportConfiguration.useReferences,
+      decimals: exportConfiguration.colorPrecision,
+      colorFormat: exportConfiguration.colorFormat,
+      forceRemUnit: exportConfiguration.forceRemUnit,
+      remBase: exportConfiguration.remBase,
+      tokenToVariableRef: (t: Token) => {
+        const variableName = tokenVariableName(t, tokenGroups, collections)
+        if (isScss) {
+          return `$${variableName}`
+        }
+        if (exportConfiguration.useFallbackValues) {
+          const rawValue = getTokenRawValue(t, mappedTokens)
+          return `var(--${variableName}, ${rawValue})`
+        }
+        return `var(--${variableName})`
+      },
+    }
+
+    const remPerProperty = {
+      fontSize: exportConfiguration.forceRemUnit && exportConfiguration.remFontSize,
+      lineHeight: exportConfiguration.forceRemUnit && exportConfiguration.remLineHeight,
+    }
+
+    let splitPairs = CSSHelper.typographyTokenValueToSplitCSS(typographyToken.value, mappedTokens, splitOptions, remPerProperty)
+
+    // Full-reference token: generate split vars that point to the source token's split vars
+    if (splitPairs === null && typographyToken.value.referencedTokenId) {
+      const referencedToken = mappedTokens.get(typographyToken.value.referencedTokenId) as TypographyToken | undefined
+      if (referencedToken && referencedToken.tokenType === TokenType.typography) {
+        const refName = tokenVariableName(referencedToken, tokenGroups, collections)
+        // Resolve the source token's suffixes (don't follow its references, just get the shape)
+        const refSplitPairs = CSSHelper.typographyTokenValueToSplitCSS(
+          referencedToken.value,
+          mappedTokens,
+          { ...splitOptions, allowReferences: false },
+          remPerProperty
+        )
+        if (refSplitPairs !== null) {
+          splitPairs = refSplitPairs.map(({ suffix }) => ({
+            suffix,
+            value: isScss ? `$${refName}-${suffix}` : `var(--${refName}-${suffix})`,
+          }))
+        }
+      }
+    }
+
+    // Emit one variable per sub-property
+    if (splitPairs !== null && splitPairs.length > 0) {
       let output = ""
       if (exportConfiguration.showDescriptions && token.description) {
         output += `${indentString}/* ${token.description.trim()} */\n`
@@ -252,7 +278,7 @@ export function convertedToken(
       output += lines.join('\n')
       return output
     }
-    // Fall through to shorthand if split returned empty (full-reference token)
+    // Fall through to shorthand only if reference chain couldn't be resolved
   }
 
   let output = ""

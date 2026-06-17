@@ -518,17 +518,22 @@ export class CSSHelper {
     /**
      * Converts a typography token value into an array of individual CSS property/value pairs.
      * Used when splitTypographyTokens is enabled, so each sub-property gets its own variable.
-     * Returns an empty array if the typography token is a full reference to another token
-     * (in that case fall back to the shorthand via typographyTokenValueToCSS).
+     *
+     * Returns null if the token is a full reference to another token — the caller is responsible
+     * for resolving the reference and generating split vars that point to the source token's split vars.
+     *
+     * remPerProperty allows overriding forceRemUnit per dimension property so the caller can
+     * opt specific sub-properties (e.g. line-height) out of REM conversion independently.
      */
     static typographyTokenValueToSplitCSS(
       typography: TypographyTokenValue,
       allTokens: Map<string, Token>,
-      options: TokenToCSSOptions
-    ): Array<{ suffix: string; value: string }> {
+      options: TokenToCSSOptions,
+      remPerProperty?: { fontSize?: boolean; lineHeight?: boolean }
+    ): Array<{ suffix: string; value: string }> | null {
       const reference = sureOptionalReference(typography.referencedTokenId, allTokens, options.allowReferences)
       if (reference) {
-        return []
+        return null
       }
 
       const fontFamilyRef = sureOptionalReference(typography.fontFamily.referencedTokenId, allTokens, options.allowReferences)
@@ -544,10 +549,17 @@ export class CSSHelper {
         ? options.tokenToVariableRef(fontWeightRef)
         : String(normalizeTextWeight(typography.fontWeight.text))
 
-      const fontSize = this.dimensionTokenValueToCSS(typography.fontSize, allTokens, options)
+      const fontSizeOptions = remPerProperty?.fontSize !== undefined
+        ? { ...options, forceRemUnit: remPerProperty.fontSize }
+        : options
+      const lineHeightOptions = remPerProperty?.lineHeight !== undefined
+        ? { ...options, forceRemUnit: remPerProperty.lineHeight }
+        : options
+
+      const fontSize = this.dimensionTokenValueToCSS(typography.fontSize, allTokens, fontSizeOptions)
 
       const lineHeight = typography.lineHeight
-        ? this.dimensionTokenValueToCSS(typography.lineHeight, allTokens, options)
+        ? this.dimensionTokenValueToCSS(typography.lineHeight, allTokens, lineHeightOptions)
         : null
 
       const textDecoration = decorationRef
