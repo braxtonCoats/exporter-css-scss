@@ -235,9 +235,15 @@ export function convertedToken(
       },
     }
 
+    const remExcluded = new Set(
+      (exportConfiguration.remTypographyExclude || '')
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    )
     const remPerProperty = {
-      fontSize: exportConfiguration.forceRemUnit && exportConfiguration.remFontSize,
-      lineHeight: exportConfiguration.forceRemUnit && exportConfiguration.remLineHeight,
+      fontSize: exportConfiguration.forceRemUnit && !remExcluded.has('font-size'),
+      lineHeight: exportConfiguration.forceRemUnit && !remExcluded.has('line-height'),
     }
 
     let splitPairs = CSSHelper.typographyTokenValueToSplitCSS(typographyToken.value, mappedTokens, splitOptions, remPerProperty)
