@@ -35,7 +35,7 @@ const config = {
   exportOnlyThemedTokens: false,
   exportBaseValues: true,
   // ↓ Comma-separated substrings to match against variable names for REM conversion
-  remInclude: "font-size, line-height, gap, border-radius, padding",
+  remInclude: "font-size, line-height, gap, border-radius, border-width, padding, size",
   remBase: 16,
   customizeStyleFileNames: false,
   customizeTokenPrefixes: false,
