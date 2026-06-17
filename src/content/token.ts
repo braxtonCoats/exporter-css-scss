@@ -182,7 +182,7 @@ export function convertedToken(
   const forceRem = nameMatches(name)
 
   // Convert token value, handling references according to the target format
-  const value = CSSHelper.tokenToCSS(token, mappedTokens, {
+  let value = CSSHelper.tokenToCSS(token, mappedTokens, {
     allowReferences: exportConfiguration.useReferences,
     decimals: exportConfiguration.colorPrecision,
     colorFormat: exportConfiguration.colorFormat,
@@ -215,6 +215,12 @@ export function convertedToken(
       return `var(--${variableName})`
     },
   })
+
+  // font-weight is always a unitless number — strip any px/rem suffix that appears
+  // when Supernova stores the value as a numeric dimension rather than a string token.
+  if (name.toLowerCase().includes('font-weight')) {
+    value = value.replace(/^(-?\d+(?:\.\d+)?)(px|rem|em)$/, '$1')
+  }
 
   // SCSS variables live at the top level (no selector block), so no indentation.
   // CSS variables are indented inside their selector block.
