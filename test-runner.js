@@ -181,9 +181,10 @@ const tokens = [
   token(TokenType.fontSize, "grp-fs-utility", "accordion",  dimVal(12)),
 
   // ── Standalone font-weight ────────────────────────────────────────────────
-  // "font-weight" does NOT match remInclude → stays as unitless number
-  token(TokenType.fontWeight, "grp-fw-heading", "h6",        strVal("600")),
-  token(TokenType.fontWeight, "grp-fw-utility", "accordion",  strVal("700")),
+  // Supernova stores these as dimension tokens (measure + px unit) in practice.
+  // The exporter strips the px suffix since font-weight is always unitless.
+  token(TokenType.dimension, "grp-fw-heading", "h6",        dimVal(600)),
+  token(TokenType.dimension, "grp-fw-utility", "accordion",  dimVal(700)),
 
   // ── Standalone font-family ────────────────────────────────────────────────
   token(TokenType.fontFamily, "grp-ff", "default", strVal("DM Sans")),
