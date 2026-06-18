@@ -211,6 +211,10 @@ const tokens = [
 
   // ── Padding ───────────────────────────────────────────────────────────────
   token(TokenType.space, "grp-padding", "sm", dimVal(24)),
+
+  // ── String tokens ─────────────────────────────────────────────────────────
+  // Should output without quotes (unlike fontFamily which needs them)
+  token(TokenType.string, "grp-root", "help text", strVal("Enter a valid email address")),
 ]
 
 // ─── Run ──────────────────────────────────────────────────────────────────────

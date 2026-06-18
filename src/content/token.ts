@@ -222,6 +222,11 @@ export function convertedToken(
     value = value.replace(/^(-?\d+(?:\.\d+)?)(px|rem|em)$/, '$1')
   }
 
+  // string/productCopy tokens should not be quoted — only fontFamily needs quotes in CSS.
+  if (token.tokenType === TokenType.string || token.tokenType === TokenType.productCopy) {
+    value = value.replace(/^"(.*)"$/s, '$1')
+  }
+
   // SCSS variables live at the top level (no selector block), so no indentation.
   // CSS variables are indented inside their selector block.
   const indentString = isScss ? '' : GeneralHelper.indent(exportConfiguration.indent)
